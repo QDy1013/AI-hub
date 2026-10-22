@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -36,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -44,6 +46,7 @@ import com.aihub.app.data.model.BillingCycle
 import com.aihub.app.data.model.Platform
 import com.aihub.app.data.receipt.ParsedReceipt
 import com.aihub.app.ui.AppViewModelProvider
+import com.aihub.app.ui.components.AppCard
 import com.aihub.app.ui.components.PlatformAvatar
 import com.aihub.app.util.formatMoney
 import java.time.LocalDate
@@ -93,7 +96,8 @@ fun ReceiptImportScreen(
                 label = { Text("收据内容") },
                 minLines = 6,
                 maxLines = 12,
-                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth().testTag("field_receipt"),
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = {
@@ -127,6 +131,7 @@ fun ReceiptImportScreen(
                             onClick = { viewModel.selectPlatform(p) },
                             label = { Text(p.displayName) },
                             leadingIcon = { PlatformAvatar(p, size = 18.dp) },
+                            shape = RoundedCornerShape(50),
                         )
                     }
                 }
@@ -139,12 +144,14 @@ fun ReceiptImportScreen(
                                 selected = viewModel.targetId == a.id,
                                 onClick = { viewModel.selectTarget(a.id) },
                                 label = { Text(a.label) },
+                                shape = RoundedCornerShape(50),
                             )
                         }
                         FilterChip(
                             selected = viewModel.targetId == null,
                             onClick = { viewModel.selectTarget(null) },
                             label = { Text("新建账号") },
+                            shape = RoundedCornerShape(50),
                         )
                     }
                     Text(
@@ -155,7 +162,8 @@ fun ReceiptImportScreen(
                     Button(
                         onClick = { viewModel.apply(onImported) },
                         enabled = !result.isEmpty,
-                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                        shape = RoundedCornerShape(18.dp),
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
                     ) {
                         Text("确认写入")
                     }
@@ -168,11 +176,8 @@ fun ReceiptImportScreen(
 
 @Composable
 private fun ResultCard(r: ParsedReceipt) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-    ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    AppCard {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("识别结果", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
             Field("平台", r.platform?.displayName)
             Field("套餐", r.planName)

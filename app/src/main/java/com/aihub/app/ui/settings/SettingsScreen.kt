@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aihub.app.AiHubApp
 import com.aihub.app.BuildConfigInfo
+import com.aihub.app.ui.components.AppCard
 
 private val roadmap = listOf(
     "第一阶段" to "应用框架、仪表盘、多平台多账号管理、会员信息手动记录、加密存储",
@@ -52,7 +53,7 @@ fun SettingsScreen(onSecureScreenChanged: (Boolean) -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("设置", fontWeight = FontWeight.Bold) },
+                title = { Text("设置", style = MaterialTheme.typography.headlineSmall) },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
         },
@@ -128,18 +129,15 @@ fun SettingsScreen(onSecureScreenChanged: (Boolean) -> Unit) {
 
 @Composable
 private fun SettingsCard(content: @Composable () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-    ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { content() }
+    AppCard {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { content() }
     }
 }
 
 @Composable
 private fun Bullet(text: String) {
     Row {
-        Text("•  ", style = MaterialTheme.typography.bodySmall)
-        Text(text, style = MaterialTheme.typography.bodySmall)
+        Text("•  ", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+        Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

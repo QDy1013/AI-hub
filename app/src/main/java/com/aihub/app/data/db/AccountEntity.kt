@@ -35,6 +35,11 @@ data class AccountEntity(
     val apiBalance: Double? = null,
     val apiBalanceCurrency: String? = null,
     val apiBalanceSyncedAt: Long? = null,
+    /** 余额构成：充值部分与赠送部分，接口没返回时为 null */
+    val apiBalanceToppedUp: Double? = null,
+    val apiBalanceGranted: Double? = null,
+    /** 接口返回的 is_available：余额是否足够继续调用 */
+    val apiBalanceAvailable: Boolean? = null,
     /** 最近一次自动同步失败的原因；成功后清空 */
     val syncError: String? = null,
     val createdAt: Long = System.currentTimeMillis(),

@@ -49,6 +49,9 @@ class AccountRepository(
                     apiBalance = current?.apiBalance,
                     apiBalanceCurrency = current?.apiBalanceCurrency,
                     apiBalanceSyncedAt = current?.apiBalanceSyncedAt,
+                    apiBalanceToppedUp = current?.apiBalanceToppedUp,
+                    apiBalanceGranted = current?.apiBalanceGranted,
+                    apiBalanceAvailable = current?.apiBalanceAvailable,
                     syncError = current?.syncError,
                 ),
             )
@@ -106,6 +109,9 @@ class AccountRepository(
                     apiBalance = primary.total,
                     apiBalanceCurrency = primary.currency,
                     apiBalanceSyncedAt = System.currentTimeMillis(),
+                    apiBalanceToppedUp = primary.toppedUp,
+                    apiBalanceGranted = primary.granted,
+                    apiBalanceAvailable = result.balance.isAvailable,
                     syncError = null,
                 )
             }
@@ -135,6 +141,16 @@ class AccountRepository(
 
     private suspend fun clearBalance(id: Long) {
         val current = dao.getById(id) ?: return
-        dao.update(current.copy(apiBalance = null, apiBalanceCurrency = null, apiBalanceSyncedAt = null, syncError = null))
+        dao.update(
+            current.copy(
+                apiBalance = null,
+                apiBalanceCurrency = null,
+                apiBalanceSyncedAt = null,
+                apiBalanceToppedUp = null,
+                apiBalanceGranted = null,
+                apiBalanceAvailable = null,
+                syncError = null,
+            ),
+        )
     }
 }

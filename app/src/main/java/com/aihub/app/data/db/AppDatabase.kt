@@ -8,7 +8,7 @@ import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [AccountEntity::class], version = 2, exportSchema = true)
+@Database(entities = [AccountEntity::class], version = 3, exportSchema = true)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun accountDao(): AccountDao
@@ -16,7 +16,7 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         fun build(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "aihub.db")
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .build()
 
         /** 第二阶段：套餐来源、API 余额与同步状态 */
@@ -28,6 +28,15 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE accounts ADD COLUMN apiBalanceCurrency TEXT")
                 db.execSQL("ALTER TABLE accounts ADD COLUMN apiBalanceSyncedAt INTEGER")
                 db.execSQL("ALTER TABLE accounts ADD COLUMN syncError TEXT")
+            }
+        }
+
+        /** 余额构成（充值 / 赠送）与可用状态 */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE accounts ADD COLUMN apiBalanceToppedUp REAL")
+                db.execSQL("ALTER TABLE accounts ADD COLUMN apiBalanceGranted REAL")
+                db.execSQL("ALTER TABLE accounts ADD COLUMN apiBalanceAvailable INTEGER")
             }
         }
     }
