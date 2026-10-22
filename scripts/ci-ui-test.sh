@@ -9,6 +9,8 @@ adb shell settings put global hide_error_dialogs 1 || true
 adb shell settings put secure anr_show_background 0 || true
 
 adb install -r app/build/outputs/apk/debug/app-debug.apk
+# 被测的 APK 一并放进输出目录，推送后可以直接从 ci-screenshots 分支下载
+cp app/build/outputs/apk/debug/app-debug.apk "$OUT/AIHub-debug.apk"
 adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
 adb logcat -c
 
