@@ -73,7 +73,7 @@ class MainFlowTest {
 
         // 4. 账号页添加第二个平台的账号
         compose.onNodeWithText("账号").performClick()
-        compose.onNodeWithText("添加账号").performClick()
+        compose.onNodeWithTag("fab_add").performClick()
         compose.onNodeWithText("ChatGPT").performClick()
         compose.onNodeWithText("Plus").performClick()
         compose.onNodeWithTag("btn_save").performScrollTo().performClick()
