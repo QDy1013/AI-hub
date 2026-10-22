@@ -1,5 +1,6 @@
 package com.aihub.app.ui.navigation
 
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -52,7 +53,10 @@ fun AiHubNavHost(onSecureScreenChanged: (Boolean) -> Unit) {
     val currentRoute = backStack?.destination?.route
     val showBottomBar = TopLevel.entries.any { it.route == currentRoute }
 
+    // 外层只负责底部导航栏；状态栏和其余系统栏由各页面自己的 Scaffold 处理，
+    // 否则外层会先消费掉顶部 inset，导致页面标题压在状态栏上
     Scaffold(
+        contentWindowInsets = WindowInsets(0),
         bottomBar = {
             if (showBottomBar) {
                 NavigationBar {
