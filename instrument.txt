@@ -1,0 +1,9 @@
+
+com.aihub.app.DeepSeekScreensTest:.
+com.aihub.app.MainFlowTest:.
+
+Time: 37.655
+
+OK (2 tests)
+
+
