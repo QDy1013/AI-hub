@@ -31,10 +31,8 @@ import com.aihub.app.AiHubApp
 import com.aihub.app.BuildConfigInfo
 
 private val roadmap = listOf(
-    "第一阶段（已完成）" to "应用框架、仪表盘、多平台多账号管理、会员信息手动记录、加密存储",
-    "第二阶段（当前）" to "DeepSeek API 余额自动同步；从订阅收据识别套餐、费用和续费日；其余平台继续手动记录并标注来源",
-    "第三阶段" to "在 App 内整合各平台官方聊天入口，保留原有会员权益",
-    "第四阶段" to "额度提醒、使用统计、趋势图表、界面打磨",
+    "第一阶段" to "应用框架、仪表盘、多平台多账号管理、会员信息手动记录、加密存储",
+    "第二阶段" to "DeepSeek API 余额自动同步；从订阅收据识别套餐、费用和续费日；其余平台继续手动记录并标注来源",
 )
 
 private val support = listOf(
@@ -109,7 +107,7 @@ fun SettingsScreen(onSecureScreenChanged: (Boolean) -> Unit) {
             }
 
             SettingsCard {
-                Text("开发路线", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text("版本内容", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                 roadmap.forEach { (stage, desc) ->
                     Column {
                         Text(stage, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)

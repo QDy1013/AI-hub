@@ -59,13 +59,13 @@ app/src/main/java/com/aihub/app/
 │   ├── accounts/            账号列表
 │   ├── edit/                添加 / 编辑账号（含 API Key 与余额同步）
 │   ├── receipt/             收据导入页
-│   ├── settings/            设置与开发路线
+│   ├── settings/            设置与版本内容
 │   ├── components/          通用组件（平台头像、状态标签、额度条、打开官方页面）
 │   ├── navigation/          底部导航与路由
 │   └── theme/
 └── util/Format.kt           日期、金额、倒计时格式化
 ```
 
-## 后续阶段
+## 项目状态
 
-各平台能否自动识别套餐与额度，见 [docs/FEASIBILITY.md](docs/FEASIBILITY.md)。
+开发在第二阶段结束，暂不继续。ChatGPT、Claude、Gemini 的个人会员额度没有官方接口，无法合规地自动获取；各平台的详细情况见 [docs/FEASIBILITY.md](docs/FEASIBILITY.md)。
