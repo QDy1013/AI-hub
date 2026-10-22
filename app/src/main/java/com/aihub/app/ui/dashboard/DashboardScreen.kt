@@ -132,7 +132,7 @@ fun DashboardScreen(
             item { SummaryCard(state) }
 
             // DeepSeek：唯一能自动同步的数据，单独放一张大卡片
-            val deepSeek = state.platforms.first { it.platform == Platform.DEEPSEEK }.accounts
+            val deepSeek = state.platforms.firstOrNull { it.platform == Platform.DEEPSEEK }?.accounts.orEmpty()
             val synced = deepSeek.filter { it.apiBalance != null || it.syncError != null }
             if (synced.isNotEmpty()) {
                 items(synced, key = { "ds${it.id}" }) { account ->
