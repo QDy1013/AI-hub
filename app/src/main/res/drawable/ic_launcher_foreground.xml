@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 四个圆点代表四个平台，围绕中心枢纽 -->
+    <path android:fillColor="#FFFFFF" android:pathData="M54,54m-9,0a9,9 0,1 1,18 0a9,9 0,1 1,-18 0" />
+    <path android:fillColor="#A5F3FC" android:pathData="M38,38m-6,0a6,6 0,1 1,12 0a6,6 0,1 1,-12 0" />
+    <path android:fillColor="#FDE68A" android:pathData="M70,38m-6,0a6,6 0,1 1,12 0a6,6 0,1 1,-12 0" />
+    <path android:fillColor="#FBCFE8" android:pathData="M38,70m-6,0a6,6 0,1 1,12 0a6,6 0,1 1,-12 0" />
+    <path android:fillColor="#BBF7D0" android:pathData="M70,70m-6,0a6,6 0,1 1,12 0a6,6 0,1 1,-12 0" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="2.5" android:pathData="M42,42L49,49M66,42L59,49M42,66L49,59M66,66L59,59" />
+</vector>
