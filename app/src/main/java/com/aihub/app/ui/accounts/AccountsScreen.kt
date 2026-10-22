@@ -33,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -68,6 +69,7 @@ fun AccountsScreen(
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = { onAddAccount(state.filter) },
+                modifier = Modifier.testTag("fab_add"),
                 icon = { Icon(Icons.Filled.Add, contentDescription = null) },
                 text = { Text("添加账号") },
             )
