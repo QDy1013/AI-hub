@@ -1,5 +1,6 @@
 package com.aihub.app
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -13,10 +14,27 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         applySecureScreen((application as AiHubApp).container.settings.secureScreen)
+        if (savedInstanceState == null) handleShare(intent)
         setContent {
             AIHubTheme {
                 AiHubNavHost(onSecureScreenChanged = ::applySecureScreen)
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleShare(intent)
+    }
+
+    /** 从邮件等 App 分享过来的收据文字，交给收据导入页在本机识别 */
+    private fun handleShare(intent: Intent?) {
+        if (intent?.action != Intent.ACTION_SEND || intent.type?.startsWith("text/") != true) return
+        val subject = intent.getStringExtra(Intent.EXTRA_SUBJECT).orEmpty()
+        val body = intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString().orEmpty()
+        val text = listOf(subject, body).filter { it.isNotBlank() }.joinToString("\n")
+        if (text.isNotBlank()) {
+            (application as AiHubApp).container.sharedText.offer(text)
         }
     }
 

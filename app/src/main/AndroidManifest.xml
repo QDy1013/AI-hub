@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- 第一阶段 App 本身不联网、不申请 INTERNET 权限；官方页面通过 Custom Tabs 交给浏览器打开 -->
+    <!-- 联网只用于用户主动填写 API Key 后查询官方余额（目前仅 api.deepseek.com）。
+         官方聊天和账单页面仍通过 Custom Tabs 交给浏览器打开，App 接触不到登录信息。 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <queries>
         <intent>
             <action android:name="android.support.customtabs.action.CustomTabsService" />
@@ -25,11 +28,18 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.AIHub">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- 从邮件 App 把订阅收据“分享”到 AI Hub，在本机识别套餐和续费日 -->
+            <intent-filter android:label="导入订阅收据">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
     </application>

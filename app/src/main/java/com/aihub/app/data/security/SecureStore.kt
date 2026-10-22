@@ -86,5 +86,6 @@ class SecureStore(context: Context) {
         private const val TAG_BITS = 128
 
         fun accountNoteKey(accountId: Long) = "account_note_$accountId"
+        fun apiKeyKey(accountId: Long) = "api_key_$accountId"
     }
 }

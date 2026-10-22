@@ -7,11 +7,15 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aihub.app.data.AccountRepository
+import com.aihub.app.data.ApiKeyEdit
 import com.aihub.app.data.db.AccountEntity
 import com.aihub.app.data.model.BillingCycle
+import com.aihub.app.data.model.PlanSource
 import com.aihub.app.data.model.Platform
 import com.aihub.app.data.model.QuotaSource
 import com.aihub.app.data.model.SubscriptionStatus
+import com.aihub.app.data.sync.BalanceResult
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 data class AccountForm(
@@ -30,6 +34,9 @@ data class AccountForm(
     val quotaUnit: String = "条消息",
     val quotaResetAt: Long? = null,
     val privateNote: String = "",
+    /** 新输入的 API Key；已保存的 Key 不会回填到这里 */
+    val apiKey: String = "",
+    val removeApiKey: Boolean = false,
 ) {
     val priceValue: Double? get() = price.trim().toDoubleOrNull()
     val quotaLimitValue: Int? get() = quotaLimit.trim().toIntOrNull()
@@ -50,6 +57,7 @@ data class AccountForm(
 class AccountEditViewModel(
     savedStateHandle: SavedStateHandle,
     private val repository: AccountRepository,
+    private val appScope: CoroutineScope,
 ) : ViewModel() {
 
     private val accountId: Long = savedStateHandle.get<Long>(ARG_ID) ?: NEW_ID
@@ -64,6 +72,14 @@ class AccountEditViewModel(
 
     private var original: AccountEntity? = null
 
+    /** 数据库中的最新记录，用于显示余额同步结果和套餐来源 */
+    var stored by mutableStateOf<AccountEntity?>(null)
+        private set
+    var hasSavedApiKey by mutableStateOf(false)
+        private set
+    var syncing by mutableStateOf(false)
+        private set
+
     init {
         if (isNew) {
             savedStateHandle.get<String>(ARG_PLATFORM)
@@ -73,6 +89,8 @@ class AccountEditViewModel(
             viewModelScope.launch {
                 repository.getAccount(accountId)?.let { a ->
                     original = a
+                    stored = a
+                    hasSavedApiKey = repository.hasApiKey(a.id)
                     form = AccountForm(
                         platform = a.platform,
                         label = a.label,
@@ -136,7 +154,16 @@ class AccountEditViewModel(
             return
         }
         val manual = f.quotaSource == QuotaSource.MANUAL
-        val entity = (original ?: AccountEntity(
+        val base = original
+        val price = f.priceValue ?: 0.0
+        val planName = f.planName.trim().ifBlank { "未填写" }
+        val currency = f.currency.trim().uppercase().ifBlank { "USD" }
+        // 收据识别的套餐信息被手动改过后，来源改回“手动记录”
+        val planUnchanged = base != null && base.planName == planName && base.status == f.status &&
+            base.billingCycle == f.billingCycle && base.price == price && base.currency == currency &&
+            base.renewsAt == f.renewsAt && base.platform == f.platform
+        val planSource = if (base != null && planUnchanged) base.planSource else PlanSource.MANUAL
+        val entity = (base ?: AccountEntity(
             platform = f.platform,
             label = "",
             email = "",
@@ -146,21 +173,49 @@ class AccountEditViewModel(
             platform = f.platform,
             label = f.label.trim(),
             email = f.email.trim(),
-            planName = f.planName.trim().ifBlank { "未填写" },
+            planName = planName,
             status = f.status,
             billingCycle = f.billingCycle,
-            price = f.priceValue ?: 0.0,
-            currency = f.currency.trim().uppercase().ifBlank { "USD" },
+            price = price,
+            currency = currency,
             renewsAt = f.renewsAt,
             quotaSource = f.quotaSource,
             quotaLimit = if (manual) f.quotaLimitValue else null,
             quotaUsed = if (manual) f.quotaUsedValue else null,
             quotaUnit = f.quotaUnit.trim().ifBlank { "条消息" },
             quotaResetAt = if (manual) f.quotaResetAt else null,
+            planSource = planSource,
+            planImportedAt = if (planSource == PlanSource.RECEIPT) base?.planImportedAt else null,
         )
+        val keyEdit = when {
+            f.apiKey.isNotBlank() -> ApiKeyEdit.Replace(f.apiKey)
+            f.removeApiKey -> ApiKeyEdit.Remove
+            else -> ApiKeyEdit.Keep
+        }
         viewModelScope.launch {
-            repository.save(entity, f.privateNote)
+            val id = repository.save(entity, f.privateNote, keyEdit)
+            // 换了新 Key 后立即查一次余额；放在应用级作用域里，离开页面也会完成
+            if (keyEdit is ApiKeyEdit.Replace && f.platform.balanceSync) {
+                appScope.launch { repository.syncBalance(id) }
+            }
             onSaved()
+        }
+    }
+
+    /** 用已保存的 Key 立即查询余额，结果写入数据库并刷新本页显示 */
+    fun syncNow(onResult: (String) -> Unit) {
+        val id = original?.id ?: return
+        if (syncing) return
+        viewModelScope.launch {
+            syncing = true
+            val message = when (val r = repository.syncBalance(id)) {
+                is BalanceResult.Success -> "余额已更新"
+                is BalanceResult.Failure -> "同步失败：${r.message}"
+                null -> "请先填写并保存 API Key"
+            }
+            stored = repository.getAccount(id)
+            syncing = false
+            onResult(message)
         }
     }
 

@@ -1,5 +1,6 @@
 package com.aihub.app.ui.edit
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,13 +49,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aihub.app.data.model.BillingCycle
+import com.aihub.app.data.model.PlanSource
 import com.aihub.app.data.model.Platform
 import com.aihub.app.data.model.QuotaSource
 import com.aihub.app.data.model.SubscriptionStatus
 import com.aihub.app.ui.AppViewModelProvider
+import com.aihub.app.ui.components.BalanceBlock
 import com.aihub.app.ui.components.PlatformAvatar
 import com.aihub.app.ui.components.openOfficialPage
 import com.aihub.app.util.formatDate
@@ -165,6 +170,14 @@ private fun AccountForm(viewModel: AccountEditViewModel, modifier: Modifier, onS
         )
 
         Section("会员套餐")
+        viewModel.stored?.takeIf { it.planSource == PlanSource.RECEIPT }?.let { a ->
+            Text(
+                "以下套餐信息来自收据识别" + (a.planImportedAt?.let { "（${formatDate(it)}）" } ?: "") +
+                    "。修改后保存会改为“手动记录”。",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             form.platform.plans.forEach { plan ->
                 FilterChip(
@@ -243,12 +256,6 @@ private fun AccountForm(viewModel: AccountEditViewModel, modifier: Modifier, onS
                 onClick = { viewModel.update { it.copy(quotaSource = QuotaSource.MANUAL) } },
                 label = { Text("手动记录") },
             )
-            FilterChip(
-                selected = false,
-                enabled = false,
-                onClick = {},
-                label = { Text("自动同步（开发中）") },
-            )
         }
         if (form.quotaSource == QuotaSource.MANUAL) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -286,10 +293,15 @@ private fun AccountForm(viewModel: AccountEditViewModel, modifier: Modifier, onS
             )
         }
         Text(
-            "大多数平台没有公开个人会员额度接口。这里的数字由你手动记录，界面会标注“手动记录”，不会冒充实时数据。",
+            "ChatGPT、Claude、Gemini 没有公开的个人会员额度接口，这里的数字由你手动记录，界面会标注“手动记录”，不会冒充实时数据。",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+
+        if (form.platform.balanceSync) {
+            HorizontalDivider()
+            ApiBalanceSection(viewModel)
+        }
 
         HorizontalDivider()
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -320,6 +332,70 @@ private fun AccountForm(viewModel: AccountEditViewModel, modifier: Modifier, onS
             Text("保存")
         }
         Spacer(Modifier.height(24.dp))
+    }
+}
+
+/** DeepSeek 等提供官方余额接口的平台：用用户自己的 API Key 自动同步余额 */
+@Composable
+private fun ApiBalanceSection(viewModel: AccountEditViewModel) {
+    val form = viewModel.form
+    val context = LocalContext.current
+    var showKey by remember { mutableStateOf(false) }
+
+    Section("API 余额（自动同步）")
+    Text(
+        "填写你在 ${form.platform.displayName} 开放平台创建的 API Key，App 会调用官方余额接口查询，" +
+            "数据标注为“自动同步”。Key 使用 Android Keystore 加密保存在本机，只发送给 ${form.platform.vendor} 官方接口，" +
+            "保存后不会再显示。建议单独创建一个 Key 专门用于查询。网页版聊天是免费的，不需要填写。",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    val keyLabel = when {
+        form.removeApiKey -> "保存后将移除已保存的 Key"
+        viewModel.hasSavedApiKey -> "已保存 Key（留空保持不变，输入则替换）"
+        else -> "API Key（sk-...）"
+    }
+    OutlinedTextField(
+        value = form.apiKey,
+        onValueChange = { v -> viewModel.update { it.copy(apiKey = v.trim(), removeApiKey = false) } },
+        label = { Text(keyLabel) },
+        singleLine = true,
+        visualTransformation = if (showKey) VisualTransformation.None else PasswordVisualTransformation(),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
+        trailingIcon = {
+            if (form.apiKey.isNotEmpty()) {
+                TextButton(onClick = { showKey = !showKey }) { Text(if (showKey) "隐藏" else "显示") }
+            }
+        },
+        modifier = Modifier.fillMaxWidth(),
+    )
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        form.platform.apiKeyUrl?.let { url ->
+            OutlinedButton(onClick = { openOfficialPage(context, url) }) { Text("创建 API Key") }
+        }
+        if (viewModel.hasSavedApiKey && !form.removeApiKey) {
+            TextButton(onClick = { viewModel.update { it.copy(apiKey = "", removeApiKey = true) } }) {
+                Text("移除已保存的 Key", color = MaterialTheme.colorScheme.error)
+            }
+        }
+    }
+    val stored = viewModel.stored
+    if (stored != null && viewModel.hasSavedApiKey && !form.removeApiKey) {
+        BalanceBlock(stored)
+        OutlinedButton(
+            onClick = {
+                viewModel.syncNow { msg -> Toast.makeText(context, msg, Toast.LENGTH_SHORT).show() }
+            },
+            enabled = !viewModel.syncing,
+        ) {
+            Text(if (viewModel.syncing) "正在同步…" else "立即同步余额")
+        }
+    } else if (form.apiKey.isNotBlank()) {
+        Text(
+            "保存后会自动查询一次余额。",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

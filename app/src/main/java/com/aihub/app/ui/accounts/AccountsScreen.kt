@@ -43,6 +43,8 @@ import com.aihub.app.data.db.AccountEntity
 import com.aihub.app.data.model.BillingCycle
 import com.aihub.app.data.model.Platform
 import com.aihub.app.ui.AppViewModelProvider
+import com.aihub.app.ui.components.BalanceBlock
+import com.aihub.app.ui.components.PlanSourcePill
 import com.aihub.app.ui.components.PlatformAvatar
 import com.aihub.app.ui.components.StatusPill
 import com.aihub.app.ui.components.openOfficialPage
@@ -150,6 +152,7 @@ private fun AccountRow(account: AccountEntity, onClick: () -> Unit, onOpenChat: 
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false),
                     )
+                    PlanSourcePill(account)
                     StatusPill(account.status)
                 }
                 if (account.email.isNotBlank()) {
@@ -172,6 +175,7 @@ private fun AccountRow(account: AccountEntity, onClick: () -> Unit, onOpenChat: 
                     },
                     style = MaterialTheme.typography.bodySmall,
                 )
+                BalanceBlock(account)
             }
             IconButton(onClick = onOpenChat) {
                 Icon(

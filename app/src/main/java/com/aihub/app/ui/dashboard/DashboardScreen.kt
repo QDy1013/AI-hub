@@ -17,19 +17,28 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,6 +53,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aihub.app.data.db.AccountEntity
 import com.aihub.app.data.model.Platform
 import com.aihub.app.ui.AppViewModelProvider
+import com.aihub.app.ui.components.BalanceBlock
+import com.aihub.app.ui.components.PlanSourcePill
 import com.aihub.app.ui.components.PlatformAvatar
 import com.aihub.app.ui.components.QuotaBlock
 import com.aihub.app.ui.components.StatusPill
@@ -58,11 +69,23 @@ import com.aihub.app.util.formatMoney
 fun DashboardScreen(
     onAddAccount: (Platform?) -> Unit,
     onOpenAccount: (Long) -> Unit,
+    onImportReceipt: () -> Unit,
     viewModel: DashboardViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val syncing by viewModel.syncing.collectAsStateWithLifecycle()
+    val message by viewModel.message.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(message) {
+        message?.let {
+            snackbarHostState.showSnackbar(it, withDismissAction = true)
+            viewModel.messageShown()
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -73,6 +96,18 @@ fun DashboardScreen(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onImportReceipt) {
+                        Icon(Icons.Filled.Email, contentDescription = "导入订阅收据")
+                    }
+                    if (syncing) {
+                        CircularProgressIndicator(modifier = Modifier.padding(12.dp).size(24.dp), strokeWidth = 2.dp)
+                    } else {
+                        IconButton(onClick = viewModel::refresh) {
+                            Icon(Icons.Filled.Refresh, contentDescription = "同步余额")
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
@@ -126,7 +161,7 @@ fun DashboardScreen(
                 )
             }
 
-            item { DataNoticeCard() }
+            item { DataNoticeCard(onImportReceipt) }
         }
     }
 }
@@ -214,7 +249,12 @@ private fun PlatformCard(summary: PlatformSummary, onClick: () -> Unit) {
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                if (top != null) StatusPill(top.status)
+                if (top != null) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        PlanSourcePill(top)
+                        StatusPill(top.status)
+                    }
+                }
             }
             if (top == null) {
                 Text(
@@ -231,24 +271,32 @@ private fun PlatformCard(summary: PlatformSummary, onClick: () -> Unit) {
                     )
                 }
                 QuotaBlock(top)
+                summary.accounts.filter { it.apiBalance != null || it.syncError != null }.forEach { account ->
+                    BalanceBlock(account)
+                }
             }
         }
     }
 }
 
 @Composable
-private fun DataNoticeCard() {
+private fun DataNoticeCard(onImportReceipt: () -> Unit) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)),
     ) {
         Row(Modifier.padding(14.dp)) {
             Icon(Icons.Filled.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-            Text(
-                "当前版本的会员与额度信息均为手动记录，并已在每处标明来源。" +
-                    "无法自动获取的数据显示为“未获取”，App 不会估算或虚构剩余额度。",
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(start = 10.dp),
-            )
+            Column(Modifier.padding(start = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    "每项数据都标明了来源：手动记录、收据识别或自动同步。" +
+                        "ChatGPT、Claude、Gemini 没有公开的个人会员额度接口，额度只能手动记录；" +
+                        "DeepSeek 填写 API Key 后可自动同步余额。App 不会估算或虚构剩余额度。",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                TextButton(onClick = onImportReceipt, contentPadding = PaddingValues(0.dp)) {
+                    Text("从订阅收据识别套餐和续费日")
+                }
+            }
         }
     }
 }

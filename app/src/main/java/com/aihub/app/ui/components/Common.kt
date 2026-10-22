@@ -29,11 +29,14 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aihub.app.data.db.AccountEntity
+import com.aihub.app.data.model.PlanSource
 import com.aihub.app.data.model.Platform
 import com.aihub.app.data.model.QuotaSource
 import com.aihub.app.data.model.SubscriptionStatus
 import com.aihub.app.ui.theme.StatusColors
 import com.aihub.app.util.formatCountdown
+import com.aihub.app.util.formatDateTime
+import com.aihub.app.util.formatMoney
 
 val Platform.color: Color get() = Color(brandColor)
 
@@ -128,6 +131,57 @@ fun QuotaBlock(account: AccountEntity, modifier: Modifier = Modifier) {
                 text = "额度重置：${formatCountdown(it)}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** 套餐信息来源标签：只有来自收据识别时才显示，避免手动记录的账号满屏标签 */
+@Composable
+fun PlanSourcePill(account: AccountEntity) {
+    if (account.planSource == PlanSource.RECEIPT) Pill(PlanSource.RECEIPT.label, StatusColors.Good)
+}
+
+/**
+ * API 余额：只显示官方接口真实返回过的数值，并注明更新时间。
+ * 同步失败时保留上次成功的数据，同时写明失败原因，不会把旧数据当成最新。
+ */
+@Composable
+fun BalanceBlock(account: AccountEntity, modifier: Modifier = Modifier) {
+    val balance = account.apiBalance
+    val error = account.syncError
+    if (balance == null && error == null) return
+    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = if (balance != null) {
+                    "API 余额 ${formatMoney(balance, account.apiBalanceCurrency ?: "CNY")}"
+                } else {
+                    "API 余额：未获取"
+                },
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Pill(
+                text = if (balance != null) "自动同步" else "同步失败",
+                color = if (balance != null) StatusColors.Good else StatusColors.Bad,
+            )
+        }
+        account.apiBalanceSyncedAt?.let {
+            Text(
+                "更新于 ${formatDateTime(it)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (error != null) {
+            Text(
+                if (balance != null) "最近一次同步失败：$error（上面是上次成功的数据）" else "同步失败：$error",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
             )
         }
     }
