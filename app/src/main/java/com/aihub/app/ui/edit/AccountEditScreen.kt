@@ -45,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -152,7 +153,7 @@ private fun AccountForm(viewModel: AccountEditViewModel, modifier: Modifier, onS
             singleLine = true,
             isError = showErrors && form.labelError != null,
             supportingText = form.labelError?.takeIf { showErrors }?.let { { Text(it) } },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().testTag("field_label"),
         )
         OutlinedTextField(
             value = form.email,
@@ -160,7 +161,7 @@ private fun AccountForm(viewModel: AccountEditViewModel, modifier: Modifier, onS
             label = { Text("登录邮箱（可选）") },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().testTag("field_email"),
         )
 
         Section("会员套餐")
@@ -257,7 +258,7 @@ private fun AccountForm(viewModel: AccountEditViewModel, modifier: Modifier, onS
                     label = { Text("已用") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).testTag("field_quota_used"),
                 )
                 OutlinedTextField(
                     value = form.quotaLimit,
@@ -265,7 +266,7 @@ private fun AccountForm(viewModel: AccountEditViewModel, modifier: Modifier, onS
                     label = { Text("总额度") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).testTag("field_quota_limit"),
                 )
                 OutlinedTextField(
                     value = form.quotaUnit,
@@ -315,7 +316,7 @@ private fun AccountForm(viewModel: AccountEditViewModel, modifier: Modifier, onS
             ) { Text("查看订阅页") }
         }
 
-        Button(onClick = onSave, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+        Button(onClick = onSave, modifier = Modifier.fillMaxWidth().height(52.dp).testTag("btn_save")) {
             Text("保存")
         }
         Spacer(Modifier.height(24.dp))
