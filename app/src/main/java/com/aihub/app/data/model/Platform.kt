@@ -11,6 +11,10 @@ enum class Platform(
     val chatUrl: String,
     val billingUrl: String,
     val plans: List<PlanPreset>,
+    /** 用户创建 API Key 的官方页面，只有支持余额同步的平台才有 */
+    val apiKeyUrl: String? = null,
+    /** 是否有官方接口可以用用户自己的 API Key 查询余额 */
+    val balanceSync: Boolean = false,
 ) {
     CHATGPT(
         displayName = "ChatGPT",
@@ -57,6 +61,8 @@ enum class Platform(
         brandColor = 0xFF4D6BFE,
         chatUrl = "https://chat.deepseek.com/",
         billingUrl = "https://platform.deepseek.com/usage",
+        apiKeyUrl = "https://platform.deepseek.com/api_keys",
+        balanceSync = true,
         plans = listOf(
             PlanPreset("Free", 0.0),
             PlanPreset("API 按量付费", 0.0),
@@ -83,4 +89,10 @@ enum class QuotaSource(val label: String) {
     UNKNOWN("未获取"),
     MANUAL("手动记录"),
     AUTO("自动同步"),
+}
+
+/** 套餐信息的来源 */
+enum class PlanSource(val label: String) {
+    MANUAL("手动记录"),
+    RECEIPT("收据识别"),
 }

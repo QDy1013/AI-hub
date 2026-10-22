@@ -11,12 +11,16 @@ import com.aihub.app.AppContainer
 import com.aihub.app.ui.accounts.AccountsViewModel
 import com.aihub.app.ui.dashboard.DashboardViewModel
 import com.aihub.app.ui.edit.AccountEditViewModel
+import com.aihub.app.ui.receipt.ReceiptImportViewModel
 
 object AppViewModelProvider {
     val Factory: ViewModelProvider.Factory = viewModelFactory {
         initializer { DashboardViewModel(container().accountRepository) }
         initializer { AccountsViewModel(container().accountRepository) }
-        initializer { AccountEditViewModel(createSavedStateHandle(), container().accountRepository) }
+        initializer {
+            AccountEditViewModel(createSavedStateHandle(), container().accountRepository, container().appScope)
+        }
+        initializer { ReceiptImportViewModel(container().accountRepository, container().sharedText) }
     }
 }
 

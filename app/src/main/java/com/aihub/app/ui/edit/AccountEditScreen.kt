@@ -1,5 +1,14 @@
 package com.aihub.app.ui.edit
 
+import android.widget.Toast
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.aihub.app.ui.theme.SectionLabelStyle
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +35,7 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -48,13 +58,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aihub.app.data.model.BillingCycle
+import com.aihub.app.data.model.PlanSource
 import com.aihub.app.data.model.Platform
 import com.aihub.app.data.model.QuotaSource
 import com.aihub.app.data.model.SubscriptionStatus
 import com.aihub.app.ui.AppViewModelProvider
+import com.aihub.app.ui.components.BalanceBlock
 import com.aihub.app.ui.components.PlatformAvatar
 import com.aihub.app.ui.components.openOfficialPage
 import com.aihub.app.util.formatDate
@@ -133,177 +147,189 @@ private fun AccountForm(viewModel: AccountEditViewModel, modifier: Modifier, onS
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Section("平台")
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Platform.entries.forEach { p ->
-                FilterChip(
-                    selected = form.platform == p,
-                    onClick = { viewModel.selectPlatform(p) },
-                    label = { Text(p.displayName) },
-                    leadingIcon = { PlatformAvatar(p, size = 18.dp) },
-                )
+        FormCard("平台") {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Platform.entries.forEach { p ->
+                    FilterChip(
+                        selected = form.platform == p,
+                        onClick = { viewModel.selectPlatform(p) },
+                        label = { Text(p.displayName) },
+                        leadingIcon = { PlatformAvatar(p, size = 18.dp) },
+                        shape = RoundedCornerShape(50),
+                    )
+                }
             }
         }
 
-        Section("账号")
-        OutlinedTextField(
-            value = form.label,
-            onValueChange = { v -> viewModel.update { it.copy(label = v) } },
-            label = { Text("名称（如：工作号）") },
-            singleLine = true,
-            isError = showErrors && form.labelError != null,
-            supportingText = form.labelError?.takeIf { showErrors }?.let { { Text(it) } },
-            modifier = Modifier.fillMaxWidth().testTag("field_label"),
-        )
-        OutlinedTextField(
-            value = form.email,
-            onValueChange = { v -> viewModel.update { it.copy(email = v) } },
-            label = { Text("登录邮箱（可选）") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            modifier = Modifier.fillMaxWidth().testTag("field_email"),
-        )
-
-        Section("会员套餐")
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            form.platform.plans.forEach { plan ->
-                FilterChip(
-                    selected = form.planName == plan.name,
-                    onClick = { viewModel.selectPlan(plan.name, plan.monthlyPriceUsd) },
-                    label = { Text(plan.name) },
-                )
-            }
-        }
-        OutlinedTextField(
-            value = form.planName,
-            onValueChange = { v -> viewModel.update { it.copy(planName = v) } },
-            label = { Text("套餐名称") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Text("订阅状态", style = MaterialTheme.typography.labelLarge)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            SubscriptionStatus.entries.forEach { s ->
-                FilterChip(
-                    selected = form.status == s,
-                    onClick = { viewModel.update { it.copy(status = s) } },
-                    label = { Text(s.label) },
-                )
-            }
-        }
-        Text("计费周期", style = MaterialTheme.typography.labelLarge)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            BillingCycle.entries.forEach { c ->
-                FilterChip(
-                    selected = form.billingCycle == c,
-                    onClick = { viewModel.update { it.copy(billingCycle = c) } },
-                    label = { Text(c.label) },
-                )
-            }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        FormCard("账号") {
             OutlinedTextField(
-                value = form.price,
-                onValueChange = { v -> viewModel.update { it.copy(price = v) } },
-                label = { Text(if (form.billingCycle == BillingCycle.YEARLY) "每年费用" else "每月费用") },
+                value = form.label,
+                onValueChange = { v -> viewModel.update { it.copy(label = v) } },
+                label = { Text("名称（如：工作号）") },
                 singleLine = true,
-                isError = showErrors && form.priceError != null,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                modifier = Modifier.weight(1f),
+                isError = showErrors && form.labelError != null,
+                supportingText = form.labelError?.takeIf { showErrors }?.let { { Text(it) } },
+                modifier = Modifier.fillMaxWidth().testTag("field_label"),
             )
             OutlinedTextField(
-                value = form.currency,
-                onValueChange = { v -> viewModel.update { it.copy(currency = v.take(4)) } },
-                label = { Text("币种") },
+                value = form.email,
+                onValueChange = { v -> viewModel.update { it.copy(email = v) } },
+                label = { Text("登录邮箱（可选）") },
                 singleLine = true,
-                modifier = Modifier.weight(0.6f),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                modifier = Modifier.fillMaxWidth().testTag("field_email"),
             )
         }
-        Text(
-            "预设价格仅供参考，请以账单为准。",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        DateField(
-            label = "下次续费 / 到期日",
-            value = form.renewsAt,
-            onChange = { v -> viewModel.update { it.copy(renewsAt = v) } },
-        )
 
-        HorizontalDivider()
-        Section("使用额度")
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(
-                selected = form.quotaSource == QuotaSource.UNKNOWN,
-                onClick = { viewModel.update { it.copy(quotaSource = QuotaSource.UNKNOWN) } },
-                label = { Text("暂不记录") },
-            )
-            FilterChip(
-                selected = form.quotaSource == QuotaSource.MANUAL,
-                onClick = { viewModel.update { it.copy(quotaSource = QuotaSource.MANUAL) } },
-                label = { Text("手动记录") },
-            )
-            FilterChip(
-                selected = false,
-                enabled = false,
-                onClick = {},
-                label = { Text("自动同步（开发中）") },
-            )
+        if (form.platform.balanceSync) {
+            ApiBalanceSection(viewModel)
         }
-        if (form.quotaSource == QuotaSource.MANUAL) {
+
+        FormCard("会员套餐") {
+            viewModel.stored?.takeIf { it.planSource == PlanSource.RECEIPT }?.let { a ->
+                Text(
+                    "以下套餐信息来自收据识别" + (a.planImportedAt?.let { "（${formatDate(it)}）" } ?: "") +
+                        "。修改后保存会改为“手动记录”。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                form.platform.plans.forEach { plan ->
+                    FilterChip(
+                        selected = form.planName == plan.name,
+                        onClick = { viewModel.selectPlan(plan.name, plan.monthlyPriceUsd) },
+                        label = { Text(plan.name) },
+                        shape = RoundedCornerShape(50),
+                    )
+                }
+            }
+            OutlinedTextField(
+                value = form.planName,
+                onValueChange = { v -> viewModel.update { it.copy(planName = v) } },
+                label = { Text("套餐名称") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Text("订阅状态", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SubscriptionStatus.entries.forEach { s ->
+                    FilterChip(
+                        selected = form.status == s,
+                        onClick = { viewModel.update { it.copy(status = s) } },
+                        label = { Text(s.label) },
+                        shape = RoundedCornerShape(50),
+                    )
+                }
+            }
+            Text("计费周期", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                BillingCycle.entries.forEach { c ->
+                    FilterChip(
+                        selected = form.billingCycle == c,
+                        onClick = { viewModel.update { it.copy(billingCycle = c) } },
+                        label = { Text(c.label) },
+                        shape = RoundedCornerShape(50),
+                    )
+                }
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
-                    value = form.quotaUsed,
-                    onValueChange = { v -> viewModel.update { it.copy(quotaUsed = v.filter(Char::isDigit)) } },
-                    label = { Text("已用") },
+                    value = form.price,
+                    onValueChange = { v -> viewModel.update { it.copy(price = v) } },
+                    label = { Text(if (form.billingCycle == BillingCycle.YEARLY) "每年费用" else "每月费用") },
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.weight(1f).testTag("field_quota_used"),
-                )
-                OutlinedTextField(
-                    value = form.quotaLimit,
-                    onValueChange = { v -> viewModel.update { it.copy(quotaLimit = v.filter(Char::isDigit)) } },
-                    label = { Text("总额度") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.weight(1f).testTag("field_quota_limit"),
-                )
-                OutlinedTextField(
-                    value = form.quotaUnit,
-                    onValueChange = { v -> viewModel.update { it.copy(quotaUnit = v) } },
-                    label = { Text("单位") },
-                    singleLine = true,
+                    isError = showErrors && form.priceError != null,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.weight(1f),
                 )
+                OutlinedTextField(
+                    value = form.currency,
+                    onValueChange = { v -> viewModel.update { it.copy(currency = v.take(4)) } },
+                    label = { Text("币种") },
+                    singleLine = true,
+                    modifier = Modifier.weight(0.6f),
+                )
             }
-            if (showErrors && form.quotaError != null) {
-                Text(form.quotaError!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-            }
+            Text(
+                "预设价格仅供参考，请以账单为准。",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             DateField(
-                label = "额度重置日",
-                value = form.quotaResetAt,
-                onChange = { v -> viewModel.update { it.copy(quotaResetAt = v) } },
+                label = "下次续费 / 到期日",
+                value = form.renewsAt,
+                onChange = { v -> viewModel.update { it.copy(renewsAt = v) } },
             )
         }
-        Text(
-            "大多数平台没有公开个人会员额度接口。这里的数字由你手动记录，界面会标注“手动记录”，不会冒充实时数据。",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
 
-        HorizontalDivider()
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Filled.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-            Text("  私密备注（加密保存）", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+        FormCard("使用额度") {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = form.quotaSource == QuotaSource.UNKNOWN,
+                    onClick = { viewModel.update { it.copy(quotaSource = QuotaSource.UNKNOWN) } },
+                    label = { Text("暂不记录") },
+                    shape = RoundedCornerShape(50),
+                )
+                FilterChip(
+                    selected = form.quotaSource == QuotaSource.MANUAL,
+                    onClick = { viewModel.update { it.copy(quotaSource = QuotaSource.MANUAL) } },
+                    label = { Text("手动记录") },
+                    shape = RoundedCornerShape(50),
+                )
+            }
+            if (form.quotaSource == QuotaSource.MANUAL) {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(
+                        value = form.quotaUsed,
+                        onValueChange = { v -> viewModel.update { it.copy(quotaUsed = v.filter(Char::isDigit)) } },
+                        label = { Text("已用") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f).testTag("field_quota_used"),
+                    )
+                    OutlinedTextField(
+                        value = form.quotaLimit,
+                        onValueChange = { v -> viewModel.update { it.copy(quotaLimit = v.filter(Char::isDigit)) } },
+                        label = { Text("总额度") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f).testTag("field_quota_limit"),
+                    )
+                    OutlinedTextField(
+                        value = form.quotaUnit,
+                        onValueChange = { v -> viewModel.update { it.copy(quotaUnit = v) } },
+                        label = { Text("单位") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                if (showErrors && form.quotaError != null) {
+                    Text(form.quotaError!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                }
+                DateField(
+                    label = "额度重置日",
+                    value = form.quotaResetAt,
+                    onChange = { v -> viewModel.update { it.copy(quotaResetAt = v) } },
+                )
+            }
+            Text(
+                "ChatGPT、Claude、Gemini 没有公开的个人会员额度接口，这里的数字由你手动记录，界面会标注“手动记录”，不会冒充实时数据。",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
-        OutlinedTextField(
-            value = form.privateNote,
-            onValueChange = { v -> viewModel.update { it.copy(privateNote = v) } },
-            label = { Text("例如：绑定的手机号、付款方式") },
-            minLines = 2,
-            supportingText = { Text("使用 Android Keystore 加密，仅存于本机。请不要在这里保存密码。") },
-            modifier = Modifier.fillMaxWidth(),
-        )
+
+        FormCard("私密备注（加密保存）", icon = Icons.Filled.Lock) {
+            OutlinedTextField(
+                value = form.privateNote,
+                onValueChange = { v -> viewModel.update { it.copy(privateNote = v) } },
+                label = { Text("例如：绑定的手机号、付款方式") },
+                minLines = 2,
+                supportingText = { Text("使用 Android Keystore 加密，仅存于本机。请不要在这里保存密码。") },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedButton(
@@ -316,22 +342,108 @@ private fun AccountForm(viewModel: AccountEditViewModel, modifier: Modifier, onS
             ) { Text("查看订阅页") }
         }
 
-        Button(onClick = onSave, modifier = Modifier.fillMaxWidth().height(52.dp).testTag("btn_save")) {
-            Text("保存")
+        Button(
+            onClick = onSave,
+            shape = RoundedCornerShape(18.dp),
+            modifier = Modifier.fillMaxWidth().height(56.dp).testTag("btn_save"),
+        ) {
+            Text("保存", style = MaterialTheme.typography.titleMedium)
         }
         Spacer(Modifier.height(24.dp))
     }
 }
 
+/** DeepSeek 等提供官方余额接口的平台：用用户自己的 API Key 自动同步余额 */
 @Composable
-private fun Section(title: String) {
-    Text(
-        title,
-        style = MaterialTheme.typography.titleSmall,
-        fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(top = 4.dp),
-    )
+private fun ApiBalanceSection(viewModel: AccountEditViewModel) {
+    val form = viewModel.form
+    val context = LocalContext.current
+    var showKey by remember { mutableStateOf(false) }
+
+    FormCard("API 余额 · 自动同步", accent = true) {
+        Text(
+            "填写你在 ${form.platform.displayName} 开放平台创建的 API Key，App 会调用官方余额接口查询，" +
+                "数据标注为“自动同步”。Key 使用 Android Keystore 加密保存在本机，只发送给 ${form.platform.vendor} 官方接口，" +
+                "保存后不会再显示。建议单独创建一个 Key 专门用于查询。网页版聊天是免费的，不需要填写。",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        val keyLabel = when {
+            form.removeApiKey -> "保存后将移除已保存的 Key"
+            viewModel.hasSavedApiKey -> "已保存 Key（留空保持不变，输入则替换）"
+            else -> "API Key（sk-...）"
+        }
+        OutlinedTextField(
+            value = form.apiKey,
+            onValueChange = { v -> viewModel.update { it.copy(apiKey = v.trim(), removeApiKey = false) } },
+            label = { Text(keyLabel) },
+            singleLine = true,
+            shape = RoundedCornerShape(14.dp),
+            visualTransformation = if (showKey) VisualTransformation.None else PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
+            trailingIcon = {
+                if (form.apiKey.isNotEmpty()) {
+                    TextButton(onClick = { showKey = !showKey }) { Text(if (showKey) "隐藏" else "显示") }
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            form.platform.apiKeyUrl?.let { url ->
+                OutlinedButton(onClick = { openOfficialPage(context, url) }) { Text("创建 API Key") }
+            }
+            if (viewModel.hasSavedApiKey && !form.removeApiKey) {
+                TextButton(onClick = { viewModel.update { it.copy(apiKey = "", removeApiKey = true) } }) {
+                    Text("移除已保存的 Key", color = MaterialTheme.colorScheme.error)
+                }
+            }
+        }
+        val stored = viewModel.stored
+        if (stored != null && viewModel.hasSavedApiKey && !form.removeApiKey) {
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            BalanceBlock(stored)
+            FilledTonalButton(
+                onClick = {
+                    viewModel.syncNow { msg -> Toast.makeText(context, msg, Toast.LENGTH_SHORT).show() }
+                },
+                enabled = !viewModel.syncing,
+            ) {
+                Text(if (viewModel.syncing) "正在同步…" else "立即同步余额")
+            }
+        } else if (form.apiKey.isNotBlank()) {
+            Text(
+                "保存后会自动查询一次余额。",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** 表单分组卡片；accent 为 true 时用品牌色描边，突出可自动同步的部分 */
+@Composable
+private fun FormCard(
+    title: String,
+    icon: ImageVector? = null,
+    accent: Boolean = false,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val border = if (accent) MaterialTheme.colorScheme.primary.copy(alpha = 0.45f) else MaterialTheme.colorScheme.outlineVariant
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.large)
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .border(1.dp, border, MaterialTheme.shapes.large)
+            .padding(18.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (icon != null) Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+            Text(title, style = SectionLabelStyle, color = if (accent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        content()
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

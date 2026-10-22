@@ -13,8 +13,8 @@ android {
         applicationId = "com.aihub.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -66,4 +66,5 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
     debugImplementation(libs.androidx.ui.test.manifest)
+    testImplementation(libs.org.json)
 }

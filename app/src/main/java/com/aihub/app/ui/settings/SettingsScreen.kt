@@ -29,12 +29,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aihub.app.AiHubApp
 import com.aihub.app.BuildConfigInfo
+import com.aihub.app.ui.components.AppCard
 
 private val roadmap = listOf(
-    "第一阶段（当前）" to "应用框架、仪表盘、多平台多账号管理、会员信息手动记录、加密存储",
-    "第二阶段" to "研究各平台官方授权方式，能自动识别的套餐与额度自动同步，其余继续标注为手动",
-    "第三阶段" to "在 App 内整合各平台官方聊天入口，保留原有会员权益",
-    "第四阶段" to "额度提醒、使用统计、趋势图表、界面打磨",
+    "第一阶段" to "应用框架、仪表盘、多平台多账号管理、会员信息手动记录、加密存储",
+    "第二阶段" to "DeepSeek API 余额自动同步；从订阅收据识别套餐、费用和续费日；其余平台继续手动记录并标注来源",
+)
+
+private val support = listOf(
+    "DeepSeek" to "余额：填写自己的 API Key 后自动同步（官方 /user/balance 接口）。充值收据可识别。",
+    "ChatGPT" to "套餐、费用、续费日：可从 OpenAI 或应用商店收据识别。消息额度：官方没有公开接口，只能手动记录。",
+    "Claude" to "套餐（含 Max 5x / 20x）、费用、续费日：可从 Anthropic 或应用商店收据识别。用量：官方没有公开接口，只能手动记录。",
+    "Gemini" to "Google AI Pro / Ultra、费用、续费日：可从 Google Play / Google One 收据识别。额度：没有公开接口，只能手动记录。",
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,7 +53,7 @@ fun SettingsScreen(onSecureScreenChanged: (Boolean) -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("设置", fontWeight = FontWeight.Bold) },
+                title = { Text("设置", style = MaterialTheme.typography.headlineSmall) },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
         },
@@ -87,10 +93,22 @@ fun SettingsScreen(onSecureScreenChanged: (Boolean) -> Unit) {
                 Bullet("私密备注使用 Android Keystore 生成的 AES-256 密钥加密。")
                 Bullet("已关闭系统云备份，卸载 App 即彻底删除数据。")
                 Bullet("App 不索取、不保存任何平台的账号密码；打开官方页面时登录由浏览器完成。")
+                Bullet("API Key 与私密备注一样用 Keystore 加密，只发送给对应平台的官方接口，保存后不再显示。")
+                Bullet("收据识别在本机完成，收据原文不保存、不上传。")
             }
 
             SettingsCard {
-                Text("开发路线", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text("自动识别支持情况", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                support.forEach { (platform, desc) ->
+                    Column {
+                        Text(platform, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                        Text(desc, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+
+            SettingsCard {
+                Text("版本内容", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                 roadmap.forEach { (stage, desc) ->
                     Column {
                         Text(stage, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
@@ -111,18 +129,15 @@ fun SettingsScreen(onSecureScreenChanged: (Boolean) -> Unit) {
 
 @Composable
 private fun SettingsCard(content: @Composable () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-    ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { content() }
+    AppCard {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { content() }
     }
 }
 
 @Composable
 private fun Bullet(text: String) {
     Row {
-        Text("•  ", style = MaterialTheme.typography.bodySmall)
-        Text(text, style = MaterialTheme.typography.bodySmall)
+        Text("•  ", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+        Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

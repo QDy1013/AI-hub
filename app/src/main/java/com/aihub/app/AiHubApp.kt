@@ -5,6 +5,12 @@ import android.content.Context
 import com.aihub.app.data.AccountRepository
 import com.aihub.app.data.db.AppDatabase
 import com.aihub.app.data.security.SecureStore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class AiHubApp : Application() {
     lateinit var container: AppContainer
@@ -22,6 +28,28 @@ class AppContainer(context: Context) {
     val secureStore = SecureStore(context)
     val accountRepository = AccountRepository(database.accountDao(), secureStore)
     val settings = AppSettings(context)
+    val sharedText = SharedTextInbox()
+    /** 生命周期跟随进程的协程作用域，用于离开页面后仍需完成的同步 */
+    val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+}
+
+/**
+ * 其他 App（如 Gmail、邮件）分享到 AI Hub 的文字，暂存在内存里等收据导入页取走。
+ * 不落盘：收据原文识别完即丢弃。
+ */
+class SharedTextInbox {
+    private val _pending = MutableStateFlow<String?>(null)
+    val pending: StateFlow<String?> = _pending.asStateFlow()
+
+    fun offer(text: String) {
+        _pending.value = text.take(MAX_LENGTH)
+    }
+
+    fun consume(): String? = _pending.value.also { _pending.value = null }
+
+    private companion object {
+        const val MAX_LENGTH = 20_000
+    }
 }
 
 class AppSettings(context: Context) {
