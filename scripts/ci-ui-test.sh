@@ -4,6 +4,10 @@ set -u
 OUT=ui-test-output
 mkdir -p "$OUT"
 
+# CI 模拟器上桌面启动器偶尔会弹出“无响应”对话框，遮挡截图；关闭系统错误对话框（不影响测试判定）
+adb shell settings put global hide_error_dialogs 1 || true
+adb shell settings put secure anr_show_background 0 || true
+
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
 adb logcat -c
